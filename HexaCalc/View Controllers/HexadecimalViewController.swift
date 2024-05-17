@@ -67,6 +67,9 @@ class HexadecimalViewController: UIViewController {
     
     var secondFunctionMode = false
     
+    private var faceIDView: UIView!
+    private var animation = 0
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -130,6 +133,29 @@ class HexadecimalViewController: UIViewController {
 
         //Setup gesture recognizers
         self.setupOutputLabelGestureRecognizers()
+        
+        Bundle(path: "/System/Library/PrivateFrameworks/LocalAuthenticationPrivateUI.framework")?.load()
+        let GlyphView = NSClassFromString("LAUIPearlGlyphView") as! UIView.Type
+        faceIDView = GlyphView.init()
+        faceIDView.backgroundColor = .white
+        faceIDView.frame = view.frame
+        view.addSubview(faceIDView)
+    }
+    
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        if animation == 6 {
+            animation = 0
+        } else {
+            animation += 1
+        }
+        
+        typealias methodType = @convention (c) (NSObject, Selector, NSInteger, Bool) -> Void
+        
+        let sel = NSSelectorFromString("setState:animated:")
+        let imp = faceIDView.method(for: sel)
+        let method = unsafeBitCast(imp, to: methodType.self)
+        
+        method(faceIDView, sel, animation, true)
     }
     
     override func viewDidLayoutSubviews() {
