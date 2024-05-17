@@ -13,6 +13,9 @@ import CoreData
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            [][1]
+        }
         
         // Override point for customization after application launch
         let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
