@@ -1,0 +1,567 @@
+---
+format_version: '11'
+default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
+project_type: ios
+pipelines:
+  build-pipeline:
+    stages:
+    - pre_stage: {}
+    - deploy-stage: {}
+  test-pipeline:
+    workflows:
+      test_env: {}
+      build-archive:
+        depends_on:
+        - test_env
+      build-archive-developer:
+        depends_on:
+        - test_env
+stages:
+  pre_stage:
+    workflows:
+    - compile-code: {}
+  deploy-stage:
+    workflows:
+    - build_archive_2: {}
+workflows:
+  build_archive_2:
+    steps:
+    - git-clone@8: {}
+    - script@1:
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            # fail if any commands fails
+            set -e
+            # make pipelines' return status equal the last command to exit with a non-zero status, or zero if all commands exit successfully
+            set -o pipefail
+            # debug log
+            set -x
+
+            cd $BITRISE_SOURCE_DIR
+
+            xcrun agvtool new-marketing-version $APP_STORE_VERSION
+
+            DATETIME_VERSION_CODE=$(date '+%s')
+            xcrun agvtool new-version -all $APP_STORE_VERSION.$DATETIME_VERSION_CODE
+        title: Update build numbers
+    - xcode-archive@5:
+        inputs:
+        - automatic_code_signing: api-key
+        - export_method: "$BITRISE_EXPORT_METHOD"
+        - distribution_method: app-store
+    - deploy-to-bitrise-io@2:
+        inputs:
+        - notify_email_list: "$EXTERNAL_GROUP_1"
+  build-archive:
+    steps:
+    - git-clone@8: {}
+    - script@1:
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            # fail if any commands fails
+            set -e
+            # make pipelines' return status equal the last command to exit with a non-zero status, or zero if all commands exit successfully
+            set -o pipefail
+            # debug log
+            set -x
+
+            cd $BITRISE_SOURCE_DIR
+
+            xcrun agvtool new-marketing-version $APP_STORE_VERSION
+
+            DATETIME_VERSION_CODE=$(date '+%s')
+            xcrun agvtool new-version -all $DATETIME_VERSION_CODE
+        title: Update build numbers
+    - xcode-archive@6:
+        inputs:
+        - automatic_code_signing: api-key
+        - distribution_method: app-store
+        - export_method: "$BITRISE_EXPORT_METHOD"
+        - compile_bitcode: 'no'
+        - upload_bitcode: 'no'
+    - deploy-to-bitrise-io:
+        inputs:
+        - debug_mode: 'true'
+    - script@1:
+        is_skippable: true
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            # fail if any commands fails
+            set -e
+            # make pipelines' return status equal the last command to exit with a non-zero status, or zero if all commands exit successfully
+            set -o pipefail
+            # debug log
+            set -x
+
+            # upload the artifact via api to the "Rere - The calculator - Demo" connected app
+
+            git clone https://github.com/bitrise-io/release-management-recipes.git
+            cd release-management-recipes
+
+            export ARTIFACT_PATH="$BITRISE_IPA_PATH"
+            export AUTHORIZATION_TOKEN="$ARTIFACT_UPLOAD_SECRET"
+            export CONNECTED_APP_ID=59501d5b-8c4f-47d0-ba2c-248bd17f5b7f
+
+            /bin/bash ./api/upload_installable_artifact.sh
+
+            export CONNECTED_APP_ID=2eeccc51-95cd-4189-aa4c-b7ec157a623f
+
+            /bin/bash ./api/upload_installable_artifact.sh
+
+            # or run a script from your repository, like:
+            # bash ./path/to/script.sh
+            # not just bash, e.g.:
+            # ruby ./path/to/script.rb
+  build-archive-developer:
+    steps:
+    - git-clone@8: {}
+    - script@1:
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            # fail if any commands fails
+            set -e
+            # make pipelines' return status equal the last command to exit with a non-zero status, or zero if all commands exit successfully
+            set -o pipefail
+            # debug log
+            set -x
+
+            cd $BITRISE_SOURCE_DIR
+
+            xcrun agvtool new-marketing-version $APP_STORE_VERSION
+
+            DATETIME_VERSION_CODE=$(date '+%s')
+            xcrun agvtool new-version -all $DATETIME_VERSION_CODE
+        title: Update build numbers
+    - xcode-archive@5:
+        inputs:
+        - project_path: "$BITRISE_PROJECT_PATH"
+        - scheme: "$BITRISE_SCHEME"
+        - automatic_code_signing: api-key
+        - export_method: "$BITRISE_EXPORT_METHOD"
+        - register_test_devices: 'yes'
+    - deploy-to-bitrise-io@2: {}
+  build-archive-test:
+    steps:
+    - git-clone@8: {}
+    - script@1:
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            # fail if any commands fails
+            set -e
+            # make pipelines' return status equal the last command to exit with a non-zero status, or zero if all commands exit successfully
+            set -o pipefail
+            # debug log
+            set -x
+
+            cd $BITRISE_SOURCE_DIR
+
+            xcrun agvtool new-marketing-version $APP_STORE_VERSION
+
+            DATETIME_VERSION_CODE=$(date '+%s')
+            xcrun agvtool new-version -all $DATETIME_VERSION_CODE
+        title: Update build numbers
+    - git::https://github.com/bitrise-steplib/steps-xcode-archive.git@enterpirse-api:
+        inputs:
+        - project_path: "$BITRISE_PROJECT_PATH"
+        - scheme: "$BITRISE_SCHEME"
+        - automatic_code_signing: api-key
+        - distribution_method: app-store
+        - export_method: "$BITRISE_EXPORT_METHOD"
+    - git::https://github.com/gaborpongracz/steps-deploy-to-bitrise-io.git@RA-3066-create-lib-from-installable-artifact-meta-parser: {}
+  build-archive-with-device-registration:
+    steps:
+    - git-clone@8: {}
+    - script@1:
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            # fail if any commands fails
+            set -e
+            # make pipelines' return status equal the last command to exit with a non-zero status, or zero if all commands exit successfully
+            set -o pipefail
+            # debug log
+            set -x
+
+            pwd
+
+            echo '00000000–0000000000000001,00000000–0000000000000002,00000000–0000000000000003' > devices.txt
+
+            DEVICE_LIST_PATH=$(realpath devices.txt)
+
+            envman add --key DEVICE_LIST_PATH --value "${DEVICE_LIST_PATH}"
+    - xcode-archive@4:
+        inputs:
+        - test_device_list_path: "$DEVICE_LIST_PATH"
+  compile-code:
+    steps:
+    - git-clone@8: {}
+    - xcode-build-for-simulator@2: {}
+    - deploy-to-bitrise-io@2:
+        inputs:
+        - is_compress: 'true'
+        - deploy_path: "$BITRISE_APP_DIR_PATH"
+  create-new-release:
+    steps:
+    - create-new-app-store-release@1:
+        inputs:
+        - bundle_id: io.bitrise.rere
+        - bitrise_api_access_token: "$ACCESS_TOKEN"
+        - release_version_number: '2.66'
+  create-new-release-API:
+    steps:
+    - script@1:
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            # fail if any commands fails
+            set -e
+            # make pipelines' return status equal the last command to exit with a non-zero status, or zero if all commands exit successfully
+            set -o pipefail
+            # debug log
+            set -x
+
+            curl -X 'POST' \
+              'https://api.bitrise.io/v0.1/apps/83c14ca4838e7c01/releases/app-store' \
+              -H 'accept: application/json' \
+              -H 'Authorization:' '$ACCESS_TOKEN' \
+              -H 'Content-Type: application/json' \
+              -d '{
+              "automatic_testflight_upload": false,
+              "bundle_id": "io.bitrise.rere",
+              "description": "",
+              "name": "2.67",
+              "release_branch": "main",
+              "slack_webhook_url": "",
+              "teams_webhook_url": "",
+              "workflow": "deploy"
+            }'
+    - create-new-app-store-release@1:
+        inputs:
+        - bundle_id: io.bitrise.rere
+        - bitrise_api_access_token: "$ACCESS_TOKEN"
+        - release_version_number: '2.66'
+  development_versio:
+    steps:
+    - git-clone@8: {}
+    - script@1:
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            # fail if any commands fails
+            set -e
+            # make pipelines' return status equal the last command to exit with a non-zero status, or zero if all commands exit successfully
+            set -o pipefail
+            # debug log
+            set -x
+
+            cd $BITRISE_SOURCE_DIR
+
+            xcrun agvtool new-marketing-version $APP_STORE_VERSION
+
+            DATETIME_VERSION_CODE=$(date '+%s')
+            xcrun agvtool new-version -all $DATETIME_VERSION_CODE
+        title: Update build numbers
+    - xcode-archive@5:
+        inputs:
+        - project_path: "$BITRISE_PROJECT_PATH"
+        - scheme: "$BITRISE_SCHEME"
+        - automatic_code_signing: api-key
+        - export_method: "$BITRISE_EXPORT_METHOD"
+    - deploy-to-bitrise-io@2: {}
+  merge-release-branch: {}
+  rm-step-test:
+    steps:
+    - git::https://github.com/bitrise-steplib/bitrise-step-create-new-app-store-release.git@main:
+        inputs:
+        - bundle_id: io.bitrise.rere
+        - verbose: 'true'
+        - release_version_number: 2.0.1
+        - bitrise_api_access_token: VGzRYoXwy5_Ac-fMv2zH_IyefSGwGXK8Dz7sktmLOir6AFKShisAYwZ8aBCdvig8EgCwZKdpHVR7upTl2Rtc8Q
+  tag-release:
+    steps:
+    - git-tag@1: {}
+  test_env:
+    steps:
+    - script@1:
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            # fail if any commands fails
+            set -e
+            # make pipelines' return status equal the last command to exit with a non-zero status, or zero if all commands exit successfully
+            set -o pipefail
+            # debug log
+            set -x
+
+            # write your script here
+            echo "Hello World!"
+            env
+
+            # or run a script from your repository, like:
+            # bash ./path/to/script.sh
+            # not just bash, e.g.:
+            # ruby ./path/to/script.rb
+  test_rm_artifact_env_vars:
+    description: 'List the available Release Management generated environment
+      variables and downloads the artifact with the given url.
+
+      '
+    steps:
+    - script@1:
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            # fail if any commands fails
+            set -ex
+            printenv | grep -e "^RM_"
+    - script@1:
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            # fail if any commands fails
+            set -ex
+
+            echo "Downloading the artifact"
+            wget $RM_RELEASE_CANDIDATE_DOWNLOAD_URL -O ./app.signed.ipa
+
+            echo "List files with size"
+            ls -al
+  upload-to-firebase: {}
+  upload-to-store:
+    steps:
+    - script@1:
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            # fail if any commands fails
+            set -ex
+
+            # write your script here
+
+            wget $URL -O ./archive_file.zip
+
+            mkdir zip_tmp
+            unzip -o archive_file.zip -d ./zip_tmp
+            mv zip_tmp/*.xcarchive ./ios.xcarchive
+    - export-xcarchive@4:
+        inputs:
+        - automatic_code_signing: api-key
+        - distribution_method: app-store
+        - archive_path: "./ios.xcarchive"
+    - deploy-to-itunesconnect-application-loader@1:
+        inputs:
+        - connection: api_key
+  build-archive-adhoc:
+    steps:
+    - git-clone@8: {}
+    - script@1:
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            # fail if any commands fails
+            set -e
+            # make pipelines' return status equal the last command to exit with a non-zero status, or zero if all commands exit successfully
+            set -o pipefail
+            # debug log
+            set -x
+
+            cd $BITRISE_SOURCE_DIR
+
+            xcrun agvtool new-marketing-version $APP_STORE_VERSION
+
+            DATETIME_VERSION_CODE=$(date '+%s')
+            xcrun agvtool new-version -all $DATETIME_VERSION_CODE
+        title: Update build numbers
+    - xcode-archive@5:
+        inputs:
+        - automatic_code_signing: api-key
+        - export_method: "$BITRISE_EXPORT_METHOD"
+        - distribution_method: ad-hoc
+    - deploy-to-bitrise-io@2: {}
+  test_upload_ipa_to_app_store:
+    steps:
+    - script@1:
+        title: Download artifact
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+
+            # create credential file
+            (echo -n $PRIVATE_KEY) > AuthKey_${KEY_ID}.p8 2> /dev/null
+
+            # download artifact
+            wget $ARTIFACT_URL -O ./app.ipa
+    - deploy-to-itunesconnect-application-loader@1:
+        title: Upload artifact to App Store Connect
+        inputs:
+        - ipa_path: "./app.ipa"
+        - connection: 'off'
+        - api_key_path: file://./AuthKey_${KEY_ID}.p8
+        - api_issuer: "$ISSUER_ID"
+    envs:
+    - ARTIFACT_URL: https://storage.googleapis.com/bitrise-build-storage-prod-with-retention-policy/apps/83c14ca4838e7c01/builds/d21823be-c288-4032-9b40-761cabfdf255/artifacts/12284b436c052f22/HexaCalc.ipa?GoogleAccessId=build-artifact-sa-prod%40ip-web-monolith-prod.iam.gserviceaccount.com&Expires=1741286726&Signature=JLQct0DwkHtxEmkWM1VUSjOjIpImLX3TPNXzWLrwfvwW2zAFEYPiLEbezF0qxEi8haaDGyl4eoIlwwUxio%2ByIlJ6qFuenaRETiCoZNyN6xF9w1SZ%2BErPPYQVz7Sy82Ed6dwF5JgbNsSAR19g39ubJ1bj1eUo7VVcJXezNJoDE7LPmPU7SC5Hi3hGGoJuhanze6ym5SP8q9LPNBVGXrcm6FrdG56U6M43FsM8bhiM6nqcTTKkoypFj5V5d3E5KY2JAsVuCs6vP2HnK6lf3PHb8t5ok73acuc6kKD9p3D0ZcIFjCC6hqa3BfIVphrICg9HhQZqrmHcHfyMeHFuyOpGaA%3D%3D
+      opts:
+        is_expand: false
+  test_upload_ipa_to_store_with_app_auth:
+    steps:
+    - script@1:
+        title: Download artifact
+        inputs:
+        - content: |+
+            #!/usr/bin/env bash
+            set -ex
+
+            # create credential file
+            (echo "{\"key_id\": \"${KEY_ID}\", \"issuer_id\": \"${ISSUER_ID}\", \"private_key\": \"${PRIVATE_KEY}\", \"test_devices\": []}") > credentials.json 2> /dev/null
+            envman add --key BITRISE_BUILD_URL --value "file://credentials.json"
+
+            # download artifact
+            wget $ARTIFACT_URL -O ./app.ipa
+
+    - deploy-to-itunesconnect-application-loader@1:
+        title: Upload artifact to App Store Connect
+        inputs:
+        - ipa_path: "./app.ipa"
+        - connection: api_key
+    envs:
+    - ARTIFACT_URL: https://storage.googleapis.com/bitrise-build-storage-prod-with-retention-policy/apps/83c14ca4838e7c01/builds/d21823be-c288-4032-9b40-761cabfdf255/artifacts/12284b436c052f22/HexaCalc.ipa?GoogleAccessId=build-artifact-sa-prod%40ip-web-monolith-prod.iam.gserviceaccount.com&Expires=1741286726&Signature=JLQct0DwkHtxEmkWM1VUSjOjIpImLX3TPNXzWLrwfvwW2zAFEYPiLEbezF0qxEi8haaDGyl4eoIlwwUxio%2ByIlJ6qFuenaRETiCoZNyN6xF9w1SZ%2BErPPYQVz7Sy82Ed6dwF5JgbNsSAR19g39ubJ1bj1eUo7VVcJXezNJoDE7LPmPU7SC5Hi3hGGoJuhanze6ym5SP8q9LPNBVGXrcm6FrdG56U6M43FsM8bhiM6nqcTTKkoypFj5V5d3E5KY2JAsVuCs6vP2HnK6lf3PHb8t5ok73acuc6kKD9p3D0ZcIFjCC6hqa3BfIVphrICg9HhQZqrmHcHfyMeHFuyOpGaA%3D%3D
+      opts:
+        is_expand: false
+  submit_for_app_store_review:
+    steps:
+    - script@1:
+        title: Create version if needed
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            # fail if any commands fails
+            set -e
+            # make pipelines' return status equal the last command to exit with a non-zero status, or zero if all commands exit successfully
+            set -o pipefail
+            # debug log
+            set -x
+
+            response=$(curl -s -w "%{http_code}" -X GET "https://api.bitrise.io//connected-apps/$RM_CONNECTED_APP_ID/apple-app-store/app-versions/draft" \
+              -H "accept: application/json" \
+              -H "authorization: $BITRISE_ACCESS_TOKEN" \
+              -H "Content-Type: application/json")
+
+            http_code="${response: -3}"        # last 3 characters
+            body="${response::-3}"             # everything except last 3 characters
+
+            if [[ "$http_code" == "404" ]]; then
+              echo "Error: Resource not found (404)"
+              exit 1
+            elif [[ "$http_code" != "200" ]]; then
+              echo "Error: HTTP $http_code"
+              echo "Response body: $body"
+              exit 1
+            fi
+
+            # Extract version_string safely now
+            version_string=$(echo "$body" | jq -r '.version_string')
+
+            echo "Version string: $version_string"
+    - script@1:
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            # fail if any commands fails
+            set -e
+            # make pipelines' return status equal the last command to exit with a non-zero status, or zero if all commands exit successfully
+            set -o pipefail
+            # debug log
+            set -x
+
+            curl -X 'PATCH' -s \
+              "https://api.bitrise.io/release-management/v1/releases/${RM_RELEASE_ID}/apple-app-store/release/settings" \
+              -H 'accept: application/json' \
+              -H "authorization: $BITRISE_ACCESS_TOKEN" \
+              -H 'Content-Type: application/json' \
+              -d '{ "phased_release": true, "release_type": "AFTER_APPROVAL" }'
+        title: Phased release
+        run_if: "{{ false }}"
+    - script@1:
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            # fail if any commands fails
+            set -e
+            # make pipelines' return status equal the last command to exit with a non-zero status, or zero if all commands exit successfully
+            set -o pipefail
+            # debug log
+            set -x
+
+              curl -X 'POST' \
+              "https://api.bitrise.io/release-management/v1/releases/${RM_RELEASE_ID}/apple-app-store/review/submit" \
+              -H 'accept: application/json' \
+              -H "authorization: $BITRISE_ACCESS_TOKEN" \
+              -d '{
+              "localizations": [
+                {
+                  "description": "string",
+                  "keywords": "string",
+                  "locale": "string",
+                  "marketing_url": "string",
+                  "promotional_text": "string",
+                  "support_url": "string",
+                  "whats_new": "string"
+                }
+              ]
+            }'
+        title: Review submission
+        run_if: "{{ false }}"
+  Build_simulator_app:
+    steps:
+    - git-clone@8: {}
+    - script@1:
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            # fail if any commands fails
+            set -e
+            # make pipelines' return status equal the last command to exit with a non-zero status, or zero if all commands exit successfully
+            set -o pipefail
+            # debug log
+            set -x
+
+            cd $BITRISE_SOURCE_DIR
+
+            xcrun agvtool new-marketing-version $APP_STORE_VERSION
+
+            DATETIME_VERSION_CODE=$(date '+%s')
+            xcrun agvtool new-version -all $APP_STORE_VERSION.$DATETIME_VERSION_CODE
+        title: Update build numbers
+    - xcode-build-for-simulator@3: {}
+    - deploy-to-bitrise-io:
+        inputs:
+        - debug_mode: 'true'
+meta:
+  bitrise.io:
+    stack: osx-xcode-latest-stable
+    machine_type_id: g2.mac.large
+app:
+  envs:
+  - opts:
+      is_expand: false
+    BITRISE_PROJECT_PATH: HexaCalc.xcodeproj
+  - opts:
+      is_expand: false
+    BITRISE_SCHEME: HexaCalc
+  - opts:
+      is_expand: false
+    BITRISE_DISTRIBUTION_METHOD: app-store
+  - APP_STORE_VERSION: 6.13.3
+    opts:
+      is_expand: false
+trigger_map:
+- push_branch: master
+  workflow: build-archive
+- pull_request_source_branch: "*"
+  workflow: build-archive
