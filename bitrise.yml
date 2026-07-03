@@ -24,6 +24,20 @@ stages:
     workflows:
     - build_archive_2: {}
 workflows:
+  test-branch-only-workflow-1:
+    steps:
+    - script@1:
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            echo "This workflow only exists on the test-branch-workfows branch"
+  test-branch-only-workflow-2:
+    steps:
+    - script@1:
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            echo "This workflow only exists on the test-branch-workfows branch"
   build_archive_2:
     steps:
     - git-clone@8: {}
