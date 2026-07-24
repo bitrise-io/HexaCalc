@@ -542,6 +542,36 @@ workflows:
     - deploy-to-bitrise-io:
         inputs:
         - debug_mode: 'true'
+  build-archive-ad-hoc:
+    steps:
+    - git-clone@8: {}
+    - script@1:
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            # fail if any commands fails
+            set -e
+            # make pipelines' return status equal the last command to exit with a non-zero status, or zero if all commands exit successfully
+            set -o pipefail
+            # debug log
+            set -x
+
+            cd $BITRISE_SOURCE_DIR
+
+            xcrun agvtool new-marketing-version $APP_STORE_VERSION
+
+            DATETIME_VERSION_CODE=$(date '+%s')
+            xcrun agvtool new-version -all $DATETIME_VERSION_CODE
+        title: Update build numbers
+    - xcode-archive@6:
+        inputs:
+        - project_path: "$BITRISE_PROJECT_PATH"
+        - scheme: "$BITRISE_SCHEME"
+        - automatic_code_signing: api-key
+        - export_method: "$BITRISE_EXPORT_METHOD"
+        - register_test_devices: 'yes'
+        - distribution_method: ad-hoc
+    - deploy-to-bitrise-io@2: {}
 meta:
   bitrise.io:
     stack: osx-xcode-latest-stable
