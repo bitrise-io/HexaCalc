@@ -274,14 +274,6 @@ workflows:
         - export_method: "$BITRISE_EXPORT_METHOD"
     - deploy-to-bitrise-io@2: {}
   merge-release-branch: {}
-  rm-step-test:
-    steps:
-    - git::https://github.com/bitrise-steplib/bitrise-step-create-new-app-store-release.git@main:
-        inputs:
-        - bundle_id: io.bitrise.rere
-        - verbose: 'true'
-        - release_version_number: 2.0.1
-        - bitrise_api_access_token: VGzRYoXwy5_Ac-fMv2zH_IyefSGwGXK8Dz7sktmLOir6AFKShisAYwZ8aBCdvig8EgCwZKdpHVR7upTl2Rtc8Q
   tag-release:
     steps:
     - git-tag@1: {}
